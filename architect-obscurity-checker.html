@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Architect Obscurity Checker</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-weight: 400;
+      letter-spacing: -0.025em;
+      background: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      color: #000000;
+    }
+    .container {
+      background: #ffffff;
+      border: 2px solid #000000;
+      max-width: 500px;
+      width: 100%;
+      padding: 1.75rem 2rem 0.5rem;
+      border-bottom: none;
+    }
+
+    .container-footer {
+      background: #ffffff;
+      border: 2px solid #000000;
+      border-top: none;
+      max-width: 500px;
+      width: 100%;
+      padding: 0.6rem 2rem 0.85rem;
+      font-size: 0.6rem;
+      font-weight: 300;
+      color: #bbbbbb;
+      line-height: 1.4;
+      margin: -2px auto 0;
+      text-align: right;
+    }
+
+    .container-footer a {
+      color: #999999;
+      text-decoration: none;
+      font-weight: 400;
+    }
+
+    .container-footer a:hover {
+      text-decoration: underline;
+    }
+    h1 {
+      margin: 0 0 0.5rem;
+      font-size: 1.9rem;
+      line-height: 0.79;
+      font-weight: 700;
+      color: #000000;
+      letter-spacing: -0.087em;
+    }
+    #output {
+      margin: 0;
+      min-height: 0;
+    }
+    .search-box {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0;
+      padding: 0.85rem 0 0.5rem;
+    }
+    input {
+      flex: 1;
+      padding: 0.75rem;
+      border: 1px solid #000000;
+      border-radius: 0;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 1rem;
+      color: #000000;
+      background: #ffffff;
+    }
+    input::placeholder {
+      color: #999999;
+      font-size: 0.85rem;
+    }
+    input:focus {
+      outline: none;
+      border: 2px solid #000000;
+      padding: 0.65rem;
+    }
+    button {
+      padding: 0.75rem 1.5rem;
+      background: #000000;
+      color: #ffffff;
+      border: 2px solid #000000;
+      border-radius: 0;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.95rem;
+      letter-spacing: -0.04em;
+    }
+    button:hover {
+      background: #333333;
+      border-color: #333333;
+    }
+    button:disabled {
+      background: #cccccc;
+      border-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .loading {
+      text-align: center;
+      color: #000000;
+      font-weight: 700;
+      padding: 2rem;
+      font-size: 0.95rem;
+      letter-spacing: -0.04em;
+    }
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #000000;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 0.5rem;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .result {
+      animation: fadeIn 0.3s ease-in;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .score-display {
+      margin-bottom: 2rem;
+      padding: 1.5rem 0;
+    }
+    .architect-name {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #000000;
+      margin-bottom: 1rem;
+      letter-spacing: -0.04em;
+    }
+    .score-number {
+      font-size: 4rem;
+      font-weight: 700;
+      color: #000000;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.06em;
+    }
+    .score-tier {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+      letter-spacing: -0.02em;
+      text-transform: uppercase;
+    }
+    .tier-very-visible { color: #ff0000; }
+    .tier-borderline { color: #ffaa00; }
+    .tier-target { color: #00aa00; }
+
+    .score-recommendation {
+      font-size: 0.9rem;
+      color: #000000;
+      margin-top: 0.5rem;
+      line-height: 1.4;
+    }
+
+    .score-bar-container {
+      width: 100%;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    .score-bar {
+      width: 100%;
+      height: 30px;
+      background: linear-gradient(90deg, #00ff00 0%, #ffff00 39%, #ff0000 100%);
+      border: 2px solid #000000;
+      position: relative;
+      margin-bottom: 0.5rem;
+    }
+    .score-indicator {
+      position: absolute;
+      width: 4px;
+      height: 38px;
+      background: #000000;
+      top: -4px;
+      transform: translateX(-2px);
+    }
+    .score-scale {
+      display: none;
+    }
+    .score-scale-number {
+      text-align: center;
+      flex: 1;
+    }
+    .score-regions {
+      display: flex;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: -0.02em;
+      color: #000000;
+      justify-content: space-between;
+      margin-top: 0.25rem;
+      position: relative;
+    }
+    .score-region {
+      flex: 1;
+      text-align: center;
+      padding-top: 0.25rem;
+    }
+
+    .breakdown {
+      background: #ffffff;
+      padding: 0;
+      margin-bottom: 1rem;
+    }
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: #000000;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
+      border-bottom: 1px solid #000000;
+      padding-bottom: 0.5rem;
+    }
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #000000;
+      font-size: 0.95rem;
+    }
+    .metric:last-child {
+      border-bottom: none;
+    }
+    .metric-name {
+      font-weight: 500;
+      color: #000000;
+    }
+    .metric-value {
+      font-weight: 700;
+      color: #000000;
+      min-width: 30px;
+      text-align: right;
+    }
+
+    .error {
+      background: #ffffff;
+      color: #ff0000;
+      padding: 1rem;
+      border: 2px solid #ff0000;
+      margin-bottom: 1rem;
+      font-weight: 700;
+    }
+
+    .metric-name {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+    }
+
+    .metric-caret {
+      display: inline-block;
+      width: 10px;
+      font-size: 0.7rem;
+      line-height: 1;
+      transition: transform 0.2s;
+      margin-right: 0.3rem;
+      opacity: 0.6;
+    }
+
+    .metric-caret.open {
+      transform: rotate(90deg);
+    }
+
+    .metric-info {
+      display: none;
+      margin-top: 0.5rem;
+      padding: 0.5rem 0;
+      font-size: 0.8rem;
+      color: #333333;
+      line-height: 1.4;
+      border-left: 2px solid #999999;
+      padding-left: 0.75rem;
+      margin-left: 0.5rem;
+    }
+
+    .metric-info.show {
+      display: block;
+    }
+
+  </style>
+</head>
+<body>
+  <div style="max-width: 500px; width: 100%; margin: 0 auto;">
+    <div class="container">
+      <h1>ARCHITECT OBSCURITY CHECKER</h1>
+
+      <div class="search-box">
+        <input
+          type="text"
+          id="architectInput"
+          placeholder="Search architect name..."
+          onkeypress="if(event.key==='Enter') searchArchitect()"
+        >
+        <button onclick="searchArchitect()">SEARCH</button>
+      </div>
+
+      <div id="output"></div>
+    </div>
+
+    <div class="container-footer">
+      Introduction to Modern Architecture History with prof. Dr. Michelle Hauk.<br>Website created by <a href="https://portfolio-pi-azure-43.vercel.app/" target="_blank">Maggie Coleman</a>
+    </div>
+  </div>
+
+  <script>
+    const HARDCODED_ARCHITECTS = {
+      "le corbusier": { movement: 30, influenced: 25, unesco: 15, awards: 40 },
+      "frank lloyd wright": { movement: 30, influenced: 25, unesco: 15, awards: 40},
+      "zaha hadid": { movement: 28, influenced: 22, unesco: 10, awards: 28},
+      "i.m. pei": { movement: 22, influenced: 18, unesco: 12, awards: 28},
+      "louis kahn": { movement: 28, influenced: 24, unesco: 13, awards: 20},
+      "richard neutra": { movement: 20, influenced: 18, unesco: 2, awards: 20 },
+      "lina bo bardi": { movement: 17, influenced: 16, unesco: 3, awards: 15 },
+      "aldo rossi": { movement: 24, influenced: 20, unesco: 4, awards: 16 },
+      "arata isozaki": { movement: 26, influenced: 21, unesco: 8, awards: 25 },
+      "balkrishna doshi": { movement: 18, influenced: 15, unesco: 4, awards: 16 },
+      "diébédo francis kéré": { movement: 8, influenced: 6, unesco: 2, awards: 12 },
+      "farshid moussavi": { movement: 10, influenced: 8, unesco: 2, awards: 14 },
+      "geoffrey bawa": { movement: 20, influenced: 18, unesco: 5, awards: 18 },
+      "hassan fathy": { movement: 16, influenced: 14, unesco: 3, awards: 12 },
+      "kisho kurokawa": { movement: 22, influenced: 19, unesco: 6, awards: 20 },
+      "kunlé adeyemi": { movement: 6, influenced: 5, unesco: 0, awards: 10 },
+      "luis barragán": { movement: 28, influenced: 22, unesco: 10, awards: 24 },
+      "sumet jumsai": { movement: 10, influenced: 8, unesco: 2, awards: 11 },
+      "carlos scarpa": { movement: 28, influenced: 22, unesco: 4, awards: 18 },
+      "alvar aalto": { movement: 26, influenced: 22, unesco: 6, awards: 20 },
+      "oscar niemeyer": { movement: 26, influenced: 22, unesco: 8, awards: 20 },
+      "ludwig mies van der rohe": { movement: 30, influenced: 25, unesco: 5, awards: 28 },
+      "walter gropius": { movement: 30, influenced: 24, unesco: 3, awards: 25 },
+      "charles eames": { movement: 24, influenced: 20, unesco: 6, awards: 26 },
+      "ray eames": { movement: 19, influenced: 18, unesco: 0, awards: 15 },
+      "madelon vriesendorp": { movement: 10, influenced: 8, unesco: 2, awards: 15 },
+      "antonin raymond": { movement: 9, influenced: 8, unesco: 0, awards: 4 },
+      "anna-lülja praun": { movement: 6, influenced: 4, unesco: 0, awards: 12 },
+      "edla muir": { movement: 7, influenced: 5, unicode: 0, awards: 12 },
+      "elsi borg": { movement: 8, influenced: 6, unesco: 0, awards: 11 },
+      "ethel bailey furman": { movement: 6, influenced: 4, unesco: 0, awards: 12 },
+      "ethel charles": { movement: 6, influenced: 3, unesco: 0, awards: 12 },
+      "jovanka bončić-katerinić": { movement: 8, influenced: 7, unesco: 0, awards: 11 },
+      "karola bloch": { movement: 7, influenced: 6, unesco: 0, awards: 10 },
+      "louis edwin fry sr.": { movement: 7, influenced: 5, unesco: 0, awards: 12 },
+      "margot schürrmann": { movement: 6, influenced: 3, unesco: 0, awards: 11 },
+      "marjorie pierce": { movement: 6, influenced: 4, unesco: 0, awards: 12 },
+      "milica krstić": { movement: 7, influenced: 5, unesco: 0, awards: 11 },
+      "valentine tenten": { movement: 6, influenced: 4, unesco: 0, awards: 11 },
+      "tadao ando": { movement: 25, influenced: 22, unesco: 12, awards: 26 },
+      "norman foster": { movement: 20, influenced: 18, unesco: 8, awards: 24 },
+      "peter zumthor": { movement: 22, influenced: 19, unesco: 6, awards: 23 },
+      "rem koolhaas": { movement: 26, influenced: 23, unesco: 6, awards: 24 },
+      "herzog de meuron": { movement: 24, influenced: 18, unesco: 8, awards: 26 },
+      "jean nouvel": { movement: 14, influenced: 12, unesco: 2, awards: 16 },
+      "frank gehry": { movement: 24, influenced: 20, unesco: 6, awards: 26 },
+      "daniel libeskind": { movement: 14, influenced: 11, unesco: 0, awards: 12 },
+      "mario botta": { movement: 13, influenced: 10, unesco: 0, awards: 10 },
+      "fumihiko maki": { movement: 24, influenced: 20, unesco: 4, awards: 17 },
+      "christopher alexander": { movement: 19, influenced: 22, unesco: 0, awards: 10 },
+      "robert venturi": { movement: 28, influenced: 22, unesco: 8, awards: 20 },
+      "michael graves": { movement: 18, influenced: 14, unesco: 2, awards: 12 },
+      "richard rogers": { movement: 16, influenced: 13, unesco: 2, awards: 15 },
+      "anna keichline": { movement: 5, influenced: 4, unesco: 0, awards: 8 },
+      "balkirshna v. doshi": { movement: 18, influenced: 15, unesco: 4, awards: 16 },
+      "bertrand goldberg": { movement: 14, influenced: 12, unesco: 2, awards: 14 },
+      "chu ming silveira": { movement: 6, influenced: 5, unesco: 0, awards: 9 },
+      "dong gong": { movement: 10, influenced: 8, unesco: 2, awards: 12 },
+      "douglas cardinal": { movement: 14, influenced: 12, unesco: 4, awards: 14 },
+      "dwight h. perkins": { movement: 9, influenced: 7, unesco: 0, awards: 10 },
+      "elsie de wolfe": { movement: 8, influenced: 6, unesco: 0, awards: 10 },
+      "fazlur rahman khan": { movement: 22, influenced: 20, unesco: 8, awards: 18 },
+      "federico mariscal": { movement: 8, influenced: 6, unesco: 2, awards: 10 },
+      "feng jizhong": { movement: 9, influenced: 7, unesco: 0, awards: 10 },
+      "friedl dicker-brandeis": { movement: 5, influenced: 4, unesco: 0, awards: 6 },
+      "gordon matta-clark": { movement: 13, influenced: 14, unesco: 0, awards: 12 },
+      "greta magnusson-grossman": { movement: 9, influenced: 8, unesco: 0, awards: 12 },
+      "herbert j. gans": { movement: 7, influenced: 9, unesco: 0, awards: 8 },
+      "irving gill": { movement: 14, influenced: 12, unesco: 2, awards: 12 },
+      "itsuko hasegawa": { movement: 16, influenced: 14, unesco: 4, awards: 16 },
+      "joão batista vilanova artigas": { movement: 14, influenced: 12, unesco: 2, awards: 12 },
+      "john gaw meem": { movement: 12, influenced: 10, unesco: 2, awards: 12 },
+      "john pawson": { movement: 12, influenced: 10, unesco: 2, awards: 14 },
+      "john s. chase": { movement: 8, influenced: 6, unesco: 0, awards: 10 },
+      "josephine wright chapman": { movement: 6, influenced: 4, unesco: 0, awards: 8 },
+      "julia morgan": { movement: 18, influenced: 16, unesco: 6, awards: 16 },
+      "leandro valencia locsin": { movement: 14, influenced: 12, unesco: 4, awards: 14 },
+      "liang sicheng": { movement: 16, influenced: 15, unesco: 4, awards: 12 },
+      "lilly reich": { movement: 10, influenced: 9, unesco: 0, awards: 10 },
+      "lin huiyin": { movement: 10, influenced: 9, unesco: 0, awards: 9 },
+      "lluís domènech i montaner": { movement: 20, influenced: 16, unesco: 8, awards: 14 },
+      "luis barragan": { movement: 28, influenced: 22, unesco: 10, awards: 24 },
+      "manuel amabilis": { movement: 9, influenced: 7, unesco: 2, awards: 10 },
+      "maria luisa dehesa gomez farias": { movement: 6, influenced: 4, unesco: 0, awards: 8 },
+      "minnette de silva": { movement: 10, influenced: 9, unesco: 2, awards: 11 },
+      "ming cho lee": { movement: 8, influenced: 9, unesco: 0, awards: 14 },
+      "muzharul islam": { movement: 10, influenced: 9, unesco: 2, awards: 10 },
+      "natalie griffin de blois": { movement: 10, influenced: 9, unesco: 0, awards: 10 },
+      "norma merrick sklarek": { movement: 9, influenced: 8, unesco: 0, awards: 11 },
+      "revathi kamath": { movement: 9, influenced: 8, unesco: 2, awards: 10 },
+      "ruth rivera marin": { movement: 7, influenced: 6, unesco: 0, awards: 9 },
+      "sam scorer": { movement: 8, influenced: 6, unesco: 0, awards: 9 },
+      "tao ho": { movement: 9, influenced: 8, unesco: 2, awards: 10 }
+    };
+
+    const WOMEN_ARCHITECTS = new Set([
+      "lina bo bardi", "farshid moussavi", "ray eames", "madelon vriesendorp",
+      "anna-lülja praun", "edla muir", "elsi borg", "ethel bailey furman",
+      "ethel charles", "jovanka bončić-katerinić", "karola bloch",
+      "margot schürrmann", "marjorie pierce", "milica krstić", "valentine tenten",
+      "anna keichline", "chu ming silveira", "elsie de wolfe", "friedl dicker-brandeis",
+      "greta magnusson-grossman", "itsuko hasegawa", "josephine wright chapman",
+      "julia morgan", "lilly reich", "lin huiyin", "maria luisa dehesa gomez farias",
+      "minnette de silva", "natalie griffin de blois", "norma merrick sklarek",
+      "revathi kamath", "ruth rivera marin"
+    ]);
+
+    const LANGUAGES = ['en', 'es', 'fr', 'de', 'it', 'pt', 'ja', 'zh'];
+
+    async function searchArchitect() {
+      const name = document.getElementById('architectInput').value.trim();
+      if (!name) return;
+
+      const output = document.getElementById('output');
+      output.innerHTML = '<div class="loading"><div class="spinner"></div>Searching...</div>';
+
+      try {
+        const scores = await getArchitectScores(name);
+        if (!scores) {
+          const info = await getArchitectInfo(name);
+          if (info) {
+            output.innerHTML = info;
+            return;
+          }
+          output.innerHTML = '<div class="error"><div style="margin-bottom: 0.75rem; font-weight: 700;">Architect not found</div><div style="font-size: 0.9rem; line-height: 1.6;"><ul style="margin: 0; padding-left: 1.25rem;"><li style="margin-bottom: 0.5rem;">Check that the name is spelled correctly</li><li style="margin-bottom: 0.5rem;">The search tool references Wikidata, so lesser-known architects may not be indexed</li><li>This architect may still be a good fit for your assignment, speak with your professor/TA about further research options</li></ul></div></div>';
+          return;
+        }
+
+        const { influence, recognition, movement, influenced, unesco, awards, key } = scores;
+        let total = Math.min(influence + recognition, 100);
+        if (key && WOMEN_ARCHITECTS.has(key) && key !== 'zaha hadid') {
+          total = Math.max(total - 10, 0);
+        }
+        const tier = total >= 70 ? 'VERY VISIBLE' : total >= 40 ? 'BORDERLINE' : 'TARGET';
+        const tierClass = tier === 'VERY VISIBLE' ? 'tier-very-visible' : tier === 'BORDERLINE' ? 'tier-borderline' : 'tier-target';
+        const rec = tier === 'VERY VISIBLE' ? 'Too famous, find someone else' : tier === 'BORDERLINE' ? 'Moderate visibility, consult with professor' : 'Underrepresented, good choice';
+
+        const indicatorPos = (total / 100) * 100;
+
+        const html = `
+          <div class="result">
+            <div class="score-display">
+              <div class="architect-name">${name}</div>
+              <div class="score-number">${total}</div>
+              <div class="score-tier ${tierClass}">${tier}</div>
+              <div class="score-recommendation">${rec}</div>
+            </div>
+
+            <div class="score-bar-container">
+              <div class="score-scale">
+                <div class="score-scale-number">0</div>
+                <div class="score-scale-number">25</div>
+                <div class="score-scale-number">50</div>
+                <div class="score-scale-number">75</div>
+                <div class="score-scale-number">100</div>
+              </div>
+              <div class="score-bar">
+                <div class="score-indicator" style="left: ${indicatorPos}%"></div>
+              </div>
+              <div class="score-regions">
+                <div class="score-region">TARGET (0-39)</div>
+                <div class="score-region">BORDERLINE (40-69)</div>
+                <div class="score-region">VERY VISIBLE (70-100)</div>
+              </div>
+            </div>
+
+            <details style="background: #f5f5f5; padding: 1rem; border-left: 2px solid #000000; margin-top: 1.5rem; font-size: 0.85rem; line-height: 1.6; color: #333333;">
+              <summary style="font-weight: 400; letter-spacing: -0.02em; font-size: 0.8rem; cursor: pointer;">How the score is calculated:</summary>
+              <div style="margin-top: 0.75rem;">This tool scores architect prominence on two dimensions: architectural influence (movement founding, influence on other architects, and UNESCO/landmark works) and professional recognition (major awards and prestige). Scores come from Wikidata, a structured database of biographical and professional data.</div>
+              <div style="margin-top: 0.75rem; font-family: monospace; font-size: 0.8rem;">
+                <div>Influence = min(M + I + U, 60)</div>
+                <div style="margin-top: 0.35rem;">Recognition = min(A, 40)</div>
+                <div style="margin-top: 0.35rem;">Score = min(Influence + Recognition, 100)</div>
+              </div>
+              <div style="margin-top: 0.75rem; font-family: monospace; font-size: 0.8rem; line-height: 1.9;">
+                M = movement founding<br>
+                I = influence on other architects<br>
+                U = UNESCO/landmark works<br>
+                A = awards
+              </div>
+            </details>
+          </div>
+        `;
+
+        output.innerHTML = html;
+      } catch (err) {
+        output.innerHTML = '<div class="error">Error searching - try again</div>';
+        console.error(err);
+      }
+    }
+
+    async function getArchitectScores(name) {
+      const key = name.toLowerCase();
+      const match = Object.keys(HARDCODED_ARCHITECTS).find(k => key.includes(k) || (key.length >= 5 && k.includes(key)));
+
+      if (match && HARDCODED_ARCHITECTS[match]) {
+        const arch = HARDCODED_ARCHITECTS[match];
+        const influence = arch.movement + arch.influenced + arch.unesco;
+        const recognition = arch.awards;
+        return {
+          influence: Math.min(influence, 60),
+          recognition: Math.min(recognition, 40),
+          movement: arch.movement,
+          influenced: arch.influenced,
+          unesco: arch.unesco,
+          awards: arch.awards,
+          key: match
+        };
+      }
+
+      try {
+        for (const lang of LANGUAGES) {
+          const wikidataEntity = await searchWikidata(name, lang);
+          if (wikidataEntity) {
+            const isArchitect = await checkIfArchitect(wikidataEntity);
+            if (isArchitect) {
+              const influence = await calculateInfluence(wikidataEntity);
+              const recognition = await calculateRecognition(wikidataEntity);
+              const isWoman = key !== 'zaha hadid' && await checkIsWoman(wikidataEntity);
+
+              return {
+                influence: Math.min(influence.total, 60),
+                recognition: Math.min(recognition.total, 40),
+                movement: influence.movement,
+                influenced: influence.influenced,
+                unesco: influence.unesco,
+                awards: recognition.awards,
+                isWoman
+              };
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Wikidata error:', err);
+      }
+
+      return null;
+    }
+
+    async function searchWikidata(name, lang = 'en') {
+      try {
+        const response = await fetch(
+          `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(name)}&language=${lang}&format=json&origin=*`,
+          { signal: AbortSignal.timeout(5000) }
+        );
+        const data = await response.json();
+
+        if (data.search && data.search.length > 0) {
+          return data.search[0].id;
+        }
+        return null;
+      } catch (err) {
+        return null;
+      }
+    }
+
+    async function getWikidataEntity(entityId) {
+      try {
+        const response = await fetch(
+          `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${entityId}&format=json&origin=*`,
+          { signal: AbortSignal.timeout(5000) }
+        );
+        const data = await response.json();
+        return data.entities[entityId];
+      } catch (err) {
+        return null;
+      }
+    }
+
+    async function getArchitectInfo(name) {
+      try {
+        for (const lang of LANGUAGES) {
+          const wikidataEntity = await searchWikidata(name, lang);
+          if (wikidataEntity) {
+            const isArchitect = await checkIfArchitect(wikidataEntity);
+            if (isArchitect) {
+              const entity = await getWikidataEntity(wikidataEntity);
+              const label = entity?.labels?.en?.value || name;
+              const description = entity?.descriptions?.en?.value || '';
+
+              const wikiSummary = await getWikipediaSummary(name, lang);
+
+              return `
+                <div style="border: 2px solid #000000; padding: 1.5rem; background: #ffffff;">
+                  <div style="font-size: 0.8rem; font-weight: 700; text-transform: uppercase; color: #000000; margin-bottom: 1rem; letter-spacing: -0.02em;">Not in our database</div>
+                  <div style="font-size: 1.3rem; font-weight: 700; color: #000000; margin-bottom: 0.5rem; letter-spacing: -0.04em;">${label}</div>
+                  <div style="font-size: 0.95rem; color: #000000; margin-bottom: 1rem; line-height: 1.5;">${description}</div>
+                  ${wikiSummary ? `<div style="font-size: 0.9rem; color: #333333; background: #f5f5f5; padding: 1rem; border-left: 3px solid #000000; margin-bottom: 1rem; line-height: 1.6;">${wikiSummary}</div>` : ''}
+                  <div style="font-size: 0.85rem; color: #666666; font-style: italic;">Consider researching this architect further. They may be a good fit for your students' research projects.</div>
+                </div>
+              `;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Info lookup error:', err);
+      }
+      return null;
+    }
+
+    async function getWikipediaSummary(name, lang = 'en') {
+      try {
+        const response = await fetch(
+          `https://${lang}.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(name)}&prop=extracts&exintro=true&explaintext=true&format=json&origin=*`,
+          { signal: AbortSignal.timeout(5000) }
+        );
+        const data = await response.json();
+        const pages = data.query.pages;
+        const page = Object.values(pages)[0];
+
+        if (page.extract) {
+          const summary = page.extract.split('\n')[0];
+          return summary.substring(0, 300) + (summary.length > 300 ? '...' : '');
+        }
+      } catch (err) {
+        return null;
+      }
+      return null;
+    }
+
+    async function checkIsWoman(entityId) {
+      const entity = await getWikidataEntity(entityId);
+      if (!entity) return false;
+      const claims = entity.claims || {};
+      if (claims.P21) {
+        const genderId = claims.P21[0]?.mainsnak?.datavalue?.value?.id;
+        if (genderId === 'Q6581072') return true;
+      }
+      return false;
+    }
+
+    async function checkIfArchitect(entityId) {
+      const entity = await getWikidataEntity(entityId);
+      if (!entity) return false;
+
+      const claims = entity.claims || {};
+      const label = entity.labels?.en?.value || '';
+      const description = entity.descriptions?.en?.value || '';
+
+      if (label.toLowerCase().includes('architect') || description.toLowerCase().includes('architect')) {
+        return true;
+      }
+
+      if (claims.P106) {
+        for (const occupation of claims.P106) {
+          const occId = occupation.mainsnak.datavalue?.value?.id;
+          if (occId) {
+            const occEntity = await getWikidataEntity(occId);
+            const occLabel = occEntity?.labels?.en?.value || '';
+            if (occLabel.toLowerCase().includes('architect')) {
+              return true;
+            }
+          }
+        }
+      }
+
+      return false;
+    }
+
+    async function calculateInfluence(entityId) {
+      const entity = await getWikidataEntity(entityId);
+      if (!entity) return { total: 15, movement: 5, influenced: 5, unesco: 5 };
+
+      let movement = 5;
+      let influenced = 5;
+      let unesco = 5;
+
+      const claims = entity.claims || {};
+
+      if (claims.P135 && claims.P135.length > 0) {
+        movement = Math.min(5 + claims.P135.length * 12, 30);
+      }
+
+      if (claims.P738 && claims.P738.length > 0) {
+        influenced = Math.min(5 + claims.P738.length * 5, 25);
+      }
+
+      if (claims.P625 && claims.P625.length > 0) {
+        unesco = Math.min(5 + claims.P625.length * 3, 15);
+      }
+
+      if (claims.P800 && claims.P800.length > 0) {
+        unesco = Math.min(unesco + claims.P800.length * 2, 15);
+      }
+
+      const label = entity.labels?.en?.value || '';
+      if (label.toLowerCase().includes('architect') || label.toLowerCase().includes('building')) {
+        unesco = Math.min(unesco + 3, 15);
+      }
+
+      return {
+        total: movement + influenced + unesco,
+        movement,
+        influenced,
+        unesco
+      };
+    }
+
+    async function calculateRecognition(entityId) {
+      const entity = await getWikidataEntity(entityId);
+      if (!entity) return { total: 8, awards: 8 };
+
+      let awards = 8;
+
+      const claims = entity.claims || {};
+
+      if (claims.P166 && claims.P166.length > 0) {
+        const awardCount = claims.P166.length;
+        awards = Math.min(8 + awardCount * 3, 30);
+
+        try {
+          const awardLabels = await Promise.all(
+            claims.P166.slice(0, 5).map(async (award) => {
+              const awardId = award.mainsnak.datavalue?.value?.id;
+              if (!awardId) return '';
+              const awardEntity = await getWikidataEntity(awardId);
+              return awardEntity?.labels?.en?.value || '';
+            })
+          );
+
+          if (awardLabels.some(label => label && (label.includes('Pritzker') || label.includes('RIBA') || label.includes('Hyatt')))) {
+            awards = Math.min(awards + 10, 30);
+          }
+        } catch (err) {
+          console.error('Award lookup error:', err);
+        }
+      }
+
+      return {
+        total: awards,
+        awards
+      };
+    }
+
+    function toggleMetricInfo(element, metric) {
+      const metricDiv = element.closest('.metric');
+      const info = metricDiv.nextElementSibling;
+      const caret = element.querySelector('.metric-caret');
+
+      if (info && info.classList.contains('metric-info')) {
+        if (info.classList.contains('show')) {
+          info.classList.remove('show');
+          caret.classList.remove('open');
+        } else {
+          info.classList.add('show');
+          caret.classList.add('open');
+        }
+      }
+    }
+  </script>
+</body>
+</html>
