@@ -309,7 +309,7 @@
         <input
           type="text"
           id="architectInput"
-          placeholder="Search architect name..."
+          placeholder="Search architect or firm name..."
           onkeypress="if(event.key==='Enter') searchArchitect()"
         >
         <button onclick="searchArchitect()">SEARCH</button>
@@ -459,7 +459,7 @@
             output.innerHTML = info;
             return;
           }
-          output.innerHTML = '<div class="error"><div style="margin-bottom: 0.75rem; font-weight: 700;">Architect not found</div><div style="font-size: 0.9rem; line-height: 1.6;"><ul style="margin: 0; padding-left: 1.25rem;"><li style="margin-bottom: 0.5rem;">Check that the name is spelled correctly</li><li style="margin-bottom: 0.5rem;">The search tool references Wikidata, so lesser-known architects may not be indexed</li><li>This architect may still be a good fit for your assignment, speak with your professor/TA about further research options</li></ul></div></div>';
+          output.innerHTML = '<div class="error"><div style="margin-bottom: 0.75rem; font-weight: 700;">Architect or firm not found</div><div style="font-size: 0.9rem; line-height: 1.6;"><ul style="margin: 0; padding-left: 1.25rem;"><li style="margin-bottom: 0.5rem;">Check that the name is spelled correctly</li><li style="margin-bottom: 0.5rem;">The search tool references Wikidata, so lesser-known architects and firms may not be indexed</li><li>This architect or firm may still be a good fit for your assignment, speak with your professor/TA about further research options</li></ul></div></div>';
           return;
         }
 
@@ -623,7 +623,7 @@
                   <div style="font-size: 1.3rem; font-weight: 700; color: #000000; margin-bottom: 0.5rem; letter-spacing: -0.04em;">${label}</div>
                   <div style="font-size: 0.95rem; color: #000000; margin-bottom: 1rem; line-height: 1.5;">${description}</div>
                   ${wikiSummary ? `<div style="font-size: 0.9rem; color: #333333; background: #f5f5f5; padding: 1rem; border-left: 3px solid #000000; margin-bottom: 1rem; line-height: 1.6;">${wikiSummary}</div>` : ''}
-                  <div style="font-size: 0.85rem; color: #666666; font-style: italic;">Consider researching this architect further. They may be a good fit for your students' research projects.</div>
+                  <div style="font-size: 0.85rem; color: #666666; font-style: italic;">Consider researching this architect or firm further. They may be a good fit for your students' research projects.</div>
                 </div>
               `;
             }
@@ -685,6 +685,34 @@
             const occEntity = await getWikidataEntity(occId);
             const occLabel = occEntity?.labels?.en?.value || '';
             if (occLabel.toLowerCase().includes('architect')) {
+              return true;
+            }
+          }
+        }
+      }
+
+      // Architecture firms: organizations don't have P106 occupation, so
+      // check instance-of (P31) and industry (P452) classifications instead.
+      if (claims.P31) {
+        for (const instanceOf of claims.P31) {
+          const instId = instanceOf.mainsnak.datavalue?.value?.id;
+          if (instId) {
+            const instEntity = await getWikidataEntity(instId);
+            const instLabel = instEntity?.labels?.en?.value || '';
+            if (instLabel.toLowerCase().includes('architect') || instLabel.toLowerCase().includes('design firm') || instLabel.toLowerCase().includes('design studio')) {
+              return true;
+            }
+          }
+        }
+      }
+
+      if (claims.P452) {
+        for (const industry of claims.P452) {
+          const indId = industry.mainsnak.datavalue?.value?.id;
+          if (indId) {
+            const indEntity = await getWikidataEntity(indId);
+            const indLabel = indEntity?.labels?.en?.value || '';
+            if (indLabel.toLowerCase().includes('architect')) {
               return true;
             }
           }
